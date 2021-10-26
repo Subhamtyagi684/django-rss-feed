@@ -1,4 +1,3 @@
-
 class ExtendedRSSFeed(feedgenerator.Rss201rev2Feed):
     """
     Create a type of RSS feed that has content:encoded elements.
@@ -27,9 +26,9 @@ class LatestNewsFeed(Feed):
 
     def get_object(self, request, rss_cat):
         self.site = get_current_site(request)
-        frontend_url =request.META.get('HTTP_REFERER')
-        url = urlparse(frontend_url)
-        self.full_path = f'{url.scheme}://{url.netloc}'
+        url_scheme =str(request.build_absolute_uri()).split('//')[0]
+        url_domain = str(self.site.domain)
+        self.full_path = f'{url_scheme}://{url_domain}'
         if str(self.site) == settings.PANCHJANYA_DOMAIAN:
             self.title = str('पांचजन्य - बात भारत की  ')
             self.description = str('वर्ष 1948 से लगातार राष्ट्रवाद की अलख जगा रहा है। भारतीय मूल्यों और सांस्कृतिक चेतना को मंच मिले औ राष्ट्रीय लक्ष्यों का स्मरण कराते रहना पाञ्चजन्य का ध्येय है।')
@@ -57,7 +56,7 @@ class LatestNewsFeed(Feed):
         return item.title
 
     def item_description(self,item):
-        return truncatewords(html.unescape(item.content), 100)
+        return strip_tags(truncatewords(html.unescape(item.content), 100))
 
     def item_link(self,item):
         return item.get_absolute_url()
@@ -84,7 +83,7 @@ class LatestNewsFeed(Feed):
                 
               </header>
 
-              '''+truncatewords(html.escape(item.content),100)+'''
+              '''+strip_tags(truncatewords(html.unescape(item.content),100))+'''
 
             </article>
           </body>
@@ -104,8 +103,13 @@ class Rss(View):
             filter_dict['is_Organizer'] = True
             temp="authenticate/rss.html"
         category_list = Category.objects.filter(**filter_dict)
+        top_category_list = News.objects.active().filter(**filter_dict).filter(categoryName=4).order_by("-id")[:3]
+        pan_top_category_list = News.objects.active().filter(**filter_dict).filter(categoryName=14).order_by("-id")[:3]
         context={
-            "all_category": category_list
+            "all_category": category_list,
+            "top_news":top_category_list,
+            "pan_top_news":pan_top_category_list,
+
         }
-        return render(request, temp, context)
+        return render(request, temp,context)
 
